@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.wasu.es.mapper.StatUserRoleMapper" >
+  <resultMap id="BaseResultMap" type="com.wasu.es.model.StatUserRole" >
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="id" property="id" jdbcType="INTEGER" />
+    <result column="user_id" property="userId" jdbcType="INTEGER" />
+    <result column="role_id" property="roleId" jdbcType="INTEGER" />
+  </resultMap>
+
+	<select id="findUserRole" resultMap="BaseResultMap">
+		select ur.*
+		from stat_user_role ur 
+		<where>
+			1 = 1
+			<if test="userId != null">
+				and ur.user_id = #{userId}
+			</if>
+		</where>
+	</select>
+	
+	<insert id="insertBatchRole" parameterType="java.util.List">
+		<selectKey resultType="java.lang.Integer" keyProperty="id"
+			order="AFTER">
+			SELECT LAST_INSERT_ID()
+		</selectKey>
+		insert into stat_user_role
+		(role_id,user_id)
+		values
+		<foreach collection="list" item="l" index="index"
+			separator=",">
+			(
+			#{l.roleId}, #{l.userId}
+			)
+		</foreach>
+	</insert>
+	
+	<delete id="deleteBatchRole" parameterType="java.util.List">
+        delete from stat_user_role
+        where id IN
+        <foreach collection="list" item="l" index="index" open="(" close=")" separator=",">
+            #{l.id}
+        </foreach>
+    </delete>
+  
+</mapper>

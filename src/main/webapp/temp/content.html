@@ -1,0 +1,32 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+pageEncoding="UTF-8"%>
+<div id="bjui-hnav">
+	<!--头部内容-->
+	<div id="bjui-hnav-navbar-box">
+		<ul id="bjui-hnav-navbar">
+			<c:forEach items="${userMenu}" var="list" begin="0" varStatus="s"
+				step="1">
+				<c:if test="${s.first}">
+					<li class="active">
+				</c:if>
+				<c:if test="${!s.first}">
+					<li>
+				</c:if>
+				<a href="javascript:;" data-toggle="slidebar">${list.name}</a>
+				<div class="items hide" data-noinit="true">
+					<c:forEach items="${list.permissionList}" var="menu">
+						<ul class="menu-items" data-faicon="star-o"
+							data-tit="${menu.name}">
+							<c:forEach items="${menu.permissionList}" var="dtl">
+								<li><a href="${dtl.url}"
+									data-options="{id:'${dtl.tabid}', faicon:'caret-right'}">${dtl.name}</a>
+								</li>
+							</c:forEach>
+						</ul>
+					</c:forEach>
+				</div>
+				</li>
+			</c:forEach>
+		</ul>
+	</div>
+</div>

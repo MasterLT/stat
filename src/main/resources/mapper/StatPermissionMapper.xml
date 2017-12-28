@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.wasu.es.mapper.StatPermissionMapper" >
+  <resultMap id="BaseResultMap" type="com.wasu.es.model.StatPermission" >
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="id" property="id" jdbcType="INTEGER" />
+    <result column="name" property="name" jdbcType="VARCHAR" />
+    <result column="url" property="url" jdbcType="VARCHAR" />
+    <result column="parent_id" property="parentId" jdbcType="INTEGER" />
+    <result column="level" property="level" jdbcType="INTEGER" />
+    <result column="code" property="code" jdbcType="VARCHAR" />
+    <result column="tabid" property="tabid" jdbcType="VARCHAR" />
+    <result column="gmt_create" property="gmtCreate" jdbcType="TIMESTAMP" />
+    <result column="gmt_update" property="gmtUpdate" jdbcType="TIMESTAMP" />
+    <result column="icon" property="icon" jdbcType="VARCHAR" />
+  </resultMap>
+  
+  <resultMap id="MyBaseResultMap" type="com.wasu.es.model.StatPermission" >
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="id" property="id" jdbcType="INTEGER" />
+    <result column="name" property="name" jdbcType="VARCHAR" />
+    <result column="url" property="url" jdbcType="VARCHAR" />
+    <result column="parent_id" property="parentId" jdbcType="INTEGER" />
+    <result column="level" property="level" jdbcType="INTEGER" />
+    <result column="code" property="code" jdbcType="VARCHAR" />
+    <result column="tabid" property="tabid" jdbcType="VARCHAR" />
+    <result column="gmt_create" property="gmtCreate" jdbcType="TIMESTAMP" />
+    <result column="gmt_update" property="gmtUpdate" jdbcType="TIMESTAMP" />
+    <result column="icon" property="icon" jdbcType="VARCHAR" />
+    <result column="roleId" property="roleId" jdbcType="INTEGER" />
+  </resultMap>
+  
+  <select id="findUserPermission" resultMap="BaseResultMap">
+		select p.*
+		from stat_permission p , stat_role_permission rp , stat_user_role ur
+		<where>
+			1 = 1
+			and rp.permission_id = p.id
+			and rp.role_id = ur.role_id
+			<if test="_parameter != null">
+				and ur.user_id = #{_parameter}
+			</if>
+		</where>
+	</select>
+	
+	<select id="findRolePermission" resultMap="MyBaseResultMap">
+		select p.* , IFNULL(rp.role_id,0) as roleId
+		from stat_permission p left join stat_role_permission rp 
+		on rp.permission_id = p.id 
+		<if test="_parameter != null">
+			and rp.role_id = #{_parameter}
+		</if>
+		<where>
+			1 = 1
+		</where>
+	</select>
+  
+</mapper>

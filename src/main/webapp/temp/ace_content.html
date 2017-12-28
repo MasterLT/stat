@@ -1,0 +1,45 @@
+<div class="sidebar" id="sidebar">
+	<script type="text/javascript">
+		try{ace.settings.loadState('sidebar')}catch(e){}
+	</script>
+	<ul class="nav nav-list">
+		<c:forEach items="${userMenu}" var="list" begin="0" varStatus="s"
+			step="1">
+			<li id="l1_${list.id}" class="">
+			<a href="#" class="dropdown-toggle"> <i class="${list.icon}"></i>
+					<span class="menu-text"> ${list.name} </span> <b
+					class="arrow icon-angle-down"></b>
+			</a>
+			<ul class="submenu">
+				<c:forEach items="${list.permissionList}" var="menu">
+						<li id="l2_${menu.id}" class="">
+						<c:if test="${menu.permissionList == null }">
+								<a style="cursor: pointer;" target="mainFrame"
+									onclick="siMenu('l2_${menu.id}','l1_${list.id}','${menu.name}','${menu.url}')"
+									class="dropdown-toggle"> <i class="icon-double-angle-right"></i>${menu.name}
+								</a>
+							</c:if> <c:if test="${menu.permissionList != null }">
+								<a style="cursor: pointer;" class="dropdown-toggle"> <i
+									class="icon-double-angle-right"></i>${menu.name} <b
+									class="arrow icon-angle-down"></b>
+								</a>
+								<ul class="submenu">
+									<c:forEach items="${menu.permissionList}" var="dtl">
+										<li id="l3_${dtl.id}" class=""><a
+											style="cursor: pointer;" target="mainFrame"
+											onclick="siMenu('l3_${dtl.id}','l2_${menu.id}','${dtl.name}','${dtl.url}')"
+											class="dropdown-toggle"> <i class=""></i>${dtl.name}
+										</a></li>
+									</c:forEach>
+								</ul>
+							</c:if></li>
+				</c:forEach>
+			</ul></li>
+		</c:forEach>
+
+	</ul>
+	<div class="sidebar-collapse" id="sidebar-collapse">
+		<i class="icon-double-angle-left" data-icon1="icon-double-angle-left"
+			data-icon2="icon-double-angle-right"></i>
+	</div>
+</div>

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.wasu.es.mapper.StatRolePermissionMapper" >
+  <resultMap id="BaseResultMap" type="com.wasu.es.model.StatRolePermission" >
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="id" property="id" jdbcType="INTEGER" />
+    <result column="role_id" property="roleId" jdbcType="INTEGER" />
+    <result column="permission_id" property="permissionId" jdbcType="INTEGER" />
+    <result column="gmt_create" property="gmtCreate" jdbcType="TIMESTAMP" />
+    <result column="gmt_update" property="gmtUpdate" jdbcType="TIMESTAMP" />
+  </resultMap>
+  
+  <select id="getRolePermission" resultMap="BaseResultMap">
+		select rp.*
+		from stat_role_permission rp
+		<where>
+			1 = 1
+			<if test="roleId != null">
+				and rp.role_id = #{roleId}
+			</if>
+			<if test="permissionId != null">
+				and rp.permission_id = #{permissionId}
+			</if>
+		</where>
+	</select>
+	
+	<insert id="insertBatchRolePermission" parameterType="java.util.List">
+		<selectKey resultType="java.lang.Integer" keyProperty="id"
+			order="AFTER">
+			SELECT LAST_INSERT_ID()
+		</selectKey>
+		insert into stat_role_permission
+		(role_id,permission_id, gmt_create)
+		values
+		<foreach collection="list" item="l" index="index"
+			separator=",">
+			(
+			#{l.roleId}, #{l.permissionId}, #{l.gmtCreate}
+			)
+		</foreach>
+	</insert>
+	
+	<delete id="deleteBatchRolePermission" parameterType="java.util.List">
+        delete from stat_role_permission
+        where role_id IN
+        <foreach collection="list" item="l" index="index" open="(" close=")" separator=",">
+            #{l.roleId}
+        </foreach>
+    </delete>
+	
+</mapper>

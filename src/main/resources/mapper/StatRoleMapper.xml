@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.wasu.es.mapper.StatRoleMapper" >
+  <resultMap id="BaseResultMap" type="com.wasu.es.model.StatRole" >
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="id" property="id" jdbcType="INTEGER" />
+    <result column="role" property="role" jdbcType="VARCHAR" />
+    <result column="level" property="level" jdbcType="INTEGER" />
+    <result column="gmt_create" property="gmtCreate" jdbcType="TIMESTAMP" />
+    <result column="gmt_update" property="gmtUpdate" jdbcType="TIMESTAMP" />
+  </resultMap>
+  
+  <resultMap id="MyBaseResultMap" type="com.wasu.es.model.StatRole" >
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="id" property="id" jdbcType="INTEGER" />
+    <result column="role" property="role" jdbcType="VARCHAR" />
+    <result column="level" property="level" jdbcType="INTEGER" />
+    <result column="gmt_create" property="gmtCreate" jdbcType="TIMESTAMP" />
+    <result column="gmt_update" property="gmtUpdate" jdbcType="TIMESTAMP" />
+    <result column="userId" property="userId" jdbcType="INTEGER" />
+  </resultMap>
+  
+  <select id="findUserRoleList" resultMap="MyBaseResultMap">
+		select r.* , IFNULL(ur.user_id,0) as userId
+		from stat_role r left join stat_user_role ur on r.id = ur.role_id and ur.user_id = #{userId}
+		<where>
+			1 = 1
+		</where>
+	</select>
+	
+</mapper>

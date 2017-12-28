@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.wasu.es.mapper.StatUserMapper">
+	<resultMap id="BaseResultMap" type="com.wasu.es.model.StatUser">
+		<!-- WARNING - @mbg.generated -->
+		<id column="id" property="id" jdbcType="INTEGER" />
+		<result column="account" property="account" jdbcType="VARCHAR" />
+		<result column="password" property="password" jdbcType="VARCHAR" />
+		<result column="type" property="type" jdbcType="INTEGER" />
+		<result column="name" property="name" jdbcType="VARCHAR" />
+		<result column="nickname" property="nickname" jdbcType="VARCHAR" />
+		<result column="mobile" property="mobile" jdbcType="VARCHAR" />
+		<result column="email" property="email" jdbcType="VARCHAR" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="gmt_create" property="gmtCreate" jdbcType="TIMESTAMP" />
+		<result column="gmt_update" property="gmtUpdate" jdbcType="TIMESTAMP" />
+		<result column="is_warning" jdbcType="INTEGER" property="isWarning" />
+	</resultMap>
+
+	<select id="getEmailsForSengWarning" resultType="java.lang.String">
+		SELECT email from stat_user where is_warning = 1 and email IS NOT NULL AND
+		email not like '';
+	</select>
+
+</mapper>

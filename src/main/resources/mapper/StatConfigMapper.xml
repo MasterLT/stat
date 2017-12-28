@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.wasu.es.mapper.StatConfigMapper" >
+  <resultMap id="BaseResultMap" type="com.wasu.es.model.StatConfig" >
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="id" property="id" jdbcType="INTEGER" />
+    <result column="sys_key" property="sysKey" jdbcType="VARCHAR" />
+    <result column="sys_value" property="sysValue" jdbcType="VARCHAR" />
+    <result column="status" property="status" jdbcType="INTEGER" />
+    <result column="content" property="content" jdbcType="LONGVARCHAR" />
+  </resultMap>
+  
+  <select id="getConfigByKey" resultMap="BaseResultMap">
+		select s.* from stat_config s 
+		<where>
+			1 = 1
+			<if test="sysKey != null">
+				and sys_key = #{sysKey}
+			</if>
+		</where>
+	</select>
+  
+  
+</mapper>

@@ -3,7 +3,10 @@ package com.wasu.es.service.impl;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.wasu.es.model.EsPosPvUv;
+import com.wasu.es.model.LogModel;
 import com.wasu.es.service.IDataService;
+import com.wasu.es.utils.EsUtils;
+import com.wasu.es.utils.HttpHelper;
 import com.wasu.tool.es.EsClient;
 import com.wasu.tool.es.EsDateUtil;
 import com.wasu.tool.es.EsQuery;
@@ -26,114 +29,183 @@ import java.util.List;
 @Slf4j
 @Service("IDataService")
 public class DataService implements IDataService {
-	EsClient esClient;
-	
-	@PostConstruct
-	public void init(){
-		esClient = new EsClient();
-	}
-	
-	@PreDestroy
-	public void destory(){
-		if (esClient != null) {
-			log.info("esClient destory");
-			esClient.destroy();
-		}
-	}
+    EsClient esClient;
 
-	public SearchResponse getLogsByExample(String index,String region, String rpname, String beginDate, String endDate) {
+    @PostConstruct
+    public void init() {
+        esClient = new EsClient();
+    }
+
+    @PreDestroy
+    public void destory() {
+        if (esClient != null) {
+            log.info("esClient destory");
+            esClient.destroy();
+        }
+    }
+
+    /**
+     * 查询页面各个按钮点击的pv，uv
+     *
+     * @param index
+     * @param region
+     * @param rpname
+     * @param beginDate
+     * @param endDate
+     * @return
+     */
+    public SearchResponse getLogsByExample(String index, String region, String rpname, String beginDate, String endDate) {
 //		String index = "logstash-" + region + "-logging-*";
-		String type = "new-logging";
-		EsQuery esquery = new EsQuery();
-		beginDate=beginDate.replaceAll("-", "");
-		endDate=endDate.replaceAll("-", "");
-		long startTime = EsDateUtil.parse(beginDate, EsDateUtil.FORMAT_3).getMillis();
-		long endTime = EsDateUtil.parse(endDate, EsDateUtil.FORMAT_3).plusDays(1).getMillis();
-		BoolQueryBuilder builder = QueryBuilders.boolQuery();
-		builder.must(QueryBuilders.rangeQuery("@timestamp").from(startTime).to(endTime));
-		builder.must(QueryBuilders.termQuery("rpname.raw", rpname));
-		esquery.setQuery(builder);
-		esquery.setPageSize(0);
+        String type = "new-logging";
+        EsQuery esquery = new EsQuery();
+        beginDate = beginDate.replaceAll("-", "");
+        endDate = endDate.replaceAll("-", "");
+        long startTime = EsDateUtil.parse(beginDate, EsDateUtil.FORMAT_3).getMillis();
+        long endTime = EsDateUtil.parse(endDate, EsDateUtil.FORMAT_3).plusDays(1).getMillis();
+        BoolQueryBuilder builder = QueryBuilders.boolQuery();
+        builder.must(QueryBuilders.rangeQuery("@timestamp").from(startTime).to(endTime));
+        builder.must(QueryBuilders.termQuery("rpname.raw", rpname));
+        esquery.setQuery(builder);
+        esquery.setPageSize(0);
+        TermsAggregationBuilder aggs = AggregationBuilders.terms("datas").field("pagecode.raw").size(100);
+        aggs.subAggregation(AggregationBuilders.cardinality("uv").field("stbid.raw"));
+        aggs.subAggregation(AggregationBuilders.terms("name").field("cpname.raw")
+                .subAggregation(AggregationBuilders.cardinality("uv").field("stbid.raw")));
 
-		TermsAggregationBuilder aggs = AggregationBuilders.terms("datas").field("pagecode.raw").size(100);
-		aggs.subAggregation(AggregationBuilders.cardinality("uv").field("stbid.raw"));
-		aggs.subAggregation(AggregationBuilders.terms("name").field("cpname.raw")
-				.subAggregation(AggregationBuilders.cardinality("uv").field("stbid.raw")));
+        SearchResponse resp1 = esClient.searchByAggs(index, type, esquery, aggs);
+        // System.out.println("result:" + resp1.toString());
+        return resp1;
+    }
 
-		SearchResponse resp1 = esClient.searchByAggs(index, type, esquery, aggs);
-		// System.out.println("result:" + resp1.toString());
-		return resp1;
-	}
+    /**
+     * 查询当前页面的入口页面的pv及uv
+     *
+     * @param index
+     * @param keyword
+     * @param beginDate
+     * @param endDate
+     * @return
+     */
+    public SearchResponse getDetailFrom1(String index, String keyword, String beginDate, String endDate) {
+//		String index = "logstash-" + region + "-logging-*";
+        String type = "new-logging";
+        EsQuery esquery = new EsQuery();
+        beginDate = beginDate.replaceAll("-", "");
+        endDate = endDate.replaceAll("-", "");
+        long startTime = EsDateUtil.parse(beginDate, EsDateUtil.FORMAT_3).getMillis();
+        long endTime = EsDateUtil.parse(endDate, EsDateUtil.FORMAT_3).plusDays(1).getMillis();
+        //筛选时间和模糊查询关键字
+        BoolQueryBuilder builder = QueryBuilders.boolQuery();
+        builder.must(QueryBuilders.rangeQuery("@timestamp").from(startTime).to(endTime));
+        builder.must(QueryBuilders.wildcardQuery("cpcode.raw", "*" + keyword + "*"));
+        esquery.setQuery(builder);
+        esquery.setPageSize(0);
+        //先对cpcode分组得出匹配的各页面
+        TermsAggregationBuilder aggs = AggregationBuilders.terms("pages").field("cpcode.raw");
+        //再对rpcode分组得到该页面的各个上级页面
+        TermsAggregationBuilder subaggs = AggregationBuilders.terms("beforpages").field("rpcode.raw");
+        subaggs.subAggregation(AggregationBuilders.cardinality("uv").field("stbid.raw"));
+        aggs.subAggregation(subaggs);
 
-	private List<EsPosPvUv> build(JSONArray obj, SearchResponse searchResponse) {
-		List<EsPosPvUv> result = new ArrayList<EsPosPvUv>();
+        SearchResponse resp = esClient.searchByAggs(index, type, esquery, aggs);
+        return resp;
+    }
 
-		StringTerms internalTerms = searchResponse.getAggregations().get("datas");
-		for (Bucket item : internalTerms.getBuckets()) {
-			InternalCardinality uv = item.getAggregations().get("uv");
-			// System.out.print("key:" + item.getKeyAsString() + "uv:" +
-			// uv.getValue() + "pv:" + item.getDocCount());
-			StringTerms iTerms = item.getAggregations().get("name");
+    public SearchResponse getDetailFrom(String index, String keyword, String beginDate, String endDate) {
+//		String index = "logstash-" + region + "-logging-*";
+        String type = "new-logging";
+        EsQuery esquery = new EsQuery();
+        beginDate = beginDate.replaceAll("-", "");
+        endDate = endDate.replaceAll("-", "");
+        long startTime = EsDateUtil.parse(beginDate, EsDateUtil.FORMAT_3).getMillis();
+        long endTime = EsDateUtil.parse(endDate, EsDateUtil.FORMAT_3).plusDays(1).getMillis();
+        //筛选时间和模糊查询关键字
+        BoolQueryBuilder builder = QueryBuilders.boolQuery();
+        builder.must(QueryBuilders.rangeQuery("@timestamp").from(startTime).to(endTime));
+        builder.must(QueryBuilders.wildcardQuery("cpcode.raw", "*" + keyword + "*"));
+        esquery.setQuery(builder);
+        esquery.setPageSize(0);
+        //先对cpcode分组得出匹配的各页面
+        TermsAggregationBuilder aggs = AggregationBuilders.terms("pages").field("cpcode.raw");
+        //再对rpcode分组得到该页面的各个上级页面
+        TermsAggregationBuilder subaggs = AggregationBuilders.terms("beforpages").field("rpcode.raw");
+        subaggs.subAggregation(AggregationBuilders.cardinality("uv").field("stbid.raw"));
+        aggs.subAggregation(subaggs);
 
-			for (int j = 0; j < obj.size(); j++) {
-				JSONObject job = obj.getJSONObject(j); // 遍历 jsonarray
+        SearchResponse resp = esClient.search(index, type, esquery);
+        List<LogModel> list = EsUtils.getListFromResult(resp, LogModel.class);
+        return resp;
+    }
 
-				if (item.getKeyAsString().equals(job.get("id"))) {
-					for (Bucket i : iTerms.getBuckets()) {
-						EsPosPvUv esDataMapDO = new EsPosPvUv();
-						esDataMapDO.setId(item.getKeyAsString());
-						esDataMapDO.setName(i.getKeyAsString());
-						esDataMapDO.setLeft(job.getString("left"));
-						esDataMapDO.setTop(job.getString("top"));
-						esDataMapDO.setPv(item.getDocCount() + "");
-						esDataMapDO.setUv(uv.getValue() + "");
-						result.add(esDataMapDO);
-						InternalCardinality iuv = i.getAggregations().get("uv");
+    private List<EsPosPvUv> build(JSONArray obj, SearchResponse searchResponse) {
+        List<EsPosPvUv> result = new ArrayList<EsPosPvUv>();
 
-						// System.out.print("name:" + i.getKeyAsString() + "uv:"
-						// + iuv.getValue() + "pv:" + i.getDocCount());
-					}
-				}
-			}
-		}
-		// System.out.println("result:" + result.toString());
-		return result;
+        StringTerms internalTerms = searchResponse.getAggregations().get("datas");
+        for (Bucket item : internalTerms.getBuckets()) {
+            InternalCardinality uv = item.getAggregations().get("uv");
+            // System.out.print("key:" + item.getKeyAsString() + "uv:" +
+            // uv.getValue() + "pv:" + item.getDocCount());
+            StringTerms iTerms = item.getAggregations().get("name");
 
-	}
+            for (int j = 0; j < obj.size(); j++) {
+                JSONObject job = obj.getJSONObject(j); // 遍历 jsonarray
 
-	private static void test() {
-		String index = "logstash-gansu-logging-2017.10.20";
-		String type = "logs";
-		EsQuery esquery = new EsQuery();
-		long startTime = EsDateUtil.parse("20171020", EsDateUtil.FORMAT_3).getMillis();
-		long endTime = EsDateUtil.parse("20171021", EsDateUtil.FORMAT_3).getMillis();
-		BoolQueryBuilder builder = QueryBuilders.boolQuery();
-		builder.must(QueryBuilders.rangeQuery("@timestamp").from(startTime).to(endTime));
-		builder.must(QueryBuilders.termQuery("rpname.keyword", "甘肃首页3.1版本"));
-		esquery.setQuery(builder);
-		esquery.setPageSize(0);
+                if (item.getKeyAsString().equals(job.get("id"))) {
+                    for (Bucket i : iTerms.getBuckets()) {
+                        EsPosPvUv esDataMapDO = new EsPosPvUv();
+                        esDataMapDO.setId(item.getKeyAsString());
+                        esDataMapDO.setName(i.getKeyAsString());
+                        esDataMapDO.setLeft(job.getString("left"));
+                        esDataMapDO.setTop(job.getString("top"));
+                        esDataMapDO.setPv(item.getDocCount() + "");
+                        esDataMapDO.setUv(uv.getValue() + "");
+                        result.add(esDataMapDO);
+                        InternalCardinality iuv = i.getAggregations().get("uv");
 
-		TermsAggregationBuilder aggs = AggregationBuilders.terms("datas").field("pagecode.keyword").size(100);
-		aggs.subAggregation(AggregationBuilders.cardinality("uv").field("stbid.keyword"));
-		aggs.subAggregation(AggregationBuilders.terms("name").field("cpname.keyword")
-				.subAggregation(AggregationBuilders.cardinality("uv").field("stbid.keyword")));
+                        // System.out.print("name:" + i.getKeyAsString() + "uv:"
+                        // + iuv.getValue() + "pv:" + i.getDocCount());
+                    }
+                }
+            }
+        }
+        // System.out.println("result:" + result.toString());
+        return result;
+    }
 
-		EsClient esClient = new EsClient();
-		SearchResponse resp1 = esClient.searchByAggs(index, type, esquery, aggs);
 
-		StringTerms internalTerms = resp1.getAggregations().get("datas");
-		for (Bucket item : internalTerms.getBuckets()) {
-			InternalCardinality uv = item.getAggregations().get("uv");
-			System.out.print("key:" + item.getKeyAsString() + "uv:" + uv.getValue() + "pv:" + item.getDocCount());
-			StringTerms iTerms = item.getAggregations().get("name");
-			for (Bucket i : iTerms.getBuckets()) {
-				InternalCardinality iuv = i.getAggregations().get("uv");
-				System.out.print("name:" + i.getKeyAsString() + "uv:" + iuv.getValue() + "pv:" + i.getDocCount());
-			}
-			System.out.println("--------------");
-		}
-		System.out.println("result:" + resp1.toString());
+    private static void test() {
+        String index = "logstash-gansu-logging-2017.10.20";
+        String type = "logs";
+        EsQuery esquery = new EsQuery();
+        long startTime = EsDateUtil.parse("20171020", EsDateUtil.FORMAT_3).getMillis();
+        long endTime = EsDateUtil.parse("20171021", EsDateUtil.FORMAT_3).getMillis();
+        BoolQueryBuilder builder = QueryBuilders.boolQuery();
+        builder.must(QueryBuilders.rangeQuery("@timestamp").from(startTime).to(endTime));
+        builder.must(QueryBuilders.termQuery("rpname.keyword", "甘肃首页3.1版本"));
+        esquery.setQuery(builder);
+        esquery.setPageSize(0);
 
-	}
+        TermsAggregationBuilder aggs = AggregationBuilders.terms("datas").field("pagecode.keyword").size(100);
+        aggs.subAggregation(AggregationBuilders.cardinality("uv").field("stbid.keyword"));
+        aggs.subAggregation(AggregationBuilders.terms("name").field("cpname.keyword")
+                .subAggregation(AggregationBuilders.cardinality("uv").field("stbid.keyword")));
+
+        EsClient esClient = new EsClient();
+        SearchResponse resp1 = esClient.searchByAggs(index, type, esquery, aggs);
+
+        StringTerms internalTerms = resp1.getAggregations().get("datas");
+        for (Bucket item : internalTerms.getBuckets()) {
+            InternalCardinality uv = item.getAggregations().get("uv");
+            System.out.print("key:" + item.getKeyAsString() + "uv:" + uv.getValue() + "pv:" + item.getDocCount());
+            StringTerms iTerms = item.getAggregations().get("name");
+            for (Bucket i : iTerms.getBuckets()) {
+                InternalCardinality iuv = i.getAggregations().get("uv");
+                System.out.print("name:" + i.getKeyAsString() + "uv:" + iuv.getValue() + "pv:" + i.getDocCount());
+            }
+            System.out.println("--------------");
+        }
+        System.out.println("result:" + resp1.toString());
+
+    }
 
 }

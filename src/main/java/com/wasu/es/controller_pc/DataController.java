@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Controller
+@RequestMapping("data")
 public class DataController {
     private static final transient Logger log = LoggerFactory.getLogger(ShiroDemoController.class);
 
@@ -41,7 +42,30 @@ public class DataController {
     @Resource
     private StatRegionMapper statRegionMapper;
 
-    @RequestMapping(value = "/getMapData/{region}", produces = "application/json;charset=UTF-8")
+    @RequestMapping(value = "/getDetailFromData/{region}", produces = "application/json;charset=UTF-8")
+    @ResponseBody
+    public Object getDetailFromData(@PathVariable String region, HttpServletRequest request) throws Exception {
+        String beginDate = request.getParameter("beginDate");
+        String endDate = request.getParameter("endDate");
+        //获取位置信息
+        String url = mapDataUrl + region + "-" + endDate + ".json";
+        JSONArray obj = HttpHelper.httpGetArray(url);
+
+        String keyword = request.getParameter("keyword");
+
+        //获取es信息
+        SearchResponse searchResponse = iDataService.getDetailFrom("logstash-" + region + "-logging-*", keyword, beginDate, endDate);
+        if (searchResponse == null) {
+            return null;
+        }
+
+        //拼装信息
+        List<EsPosPvUv> result = build(obj, searchResponse);
+
+        return result;
+    }
+
+    @RequestMapping(value = "/getIndexData/{region}", produces = "application/json;charset=UTF-8")
     @ResponseBody
     public Object getMapData(@PathVariable String region, HttpServletRequest request) throws Exception {
         String beginDate = request.getParameter("beginDate");
@@ -98,30 +122,11 @@ public class DataController {
                     InternalCardinality nameUv = i.getAggregations().get("uv");
                     name.setUv(nameUv.getValue() + "");
                     nameList.add(name);
-//					esDataMapDO.setName(i.getKeyAsString());
-//					esDataMapDO.setPv(item.getDocCount() + "");
-//					esDataMapDO.setUv(uv.getValue() + "");
                 }
                 esDataMapDO.setList(nameList);
 
                 result.add(esDataMapDO);
             }
-
-//			for (int j = 0; j < obj.size(); j++) {
-//				JSONObject job = obj.getJSONObject(j); // 遍历 jsonarray
-//				
-//				if (item.getKeyAsString().equals(job.get("id"))) {
-//					for (Bucket i : iTerms.getBuckets()) {
-//						esDataMapDO.setName(i.getKeyAsString());
-//						esDataMapDO.setPv(item.getDocCount()+"");
-//						esDataMapDO.setUv(uv.getValue()+"");
-//						InternalCardinality iuv = i.getAggregations().get("uv");
-//						
-////						System.out.print("name:" + i.getKeyAsString() + "uv:" + iuv.getValue() + "pv:" + i.getDocCount());
-//					}
-//				}
-//			}
-
         }
         return result;
     }

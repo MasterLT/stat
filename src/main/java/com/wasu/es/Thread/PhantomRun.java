@@ -42,8 +42,11 @@ public class PhantomRun extends BaseCountDowLatch {
                         false);
             }
             if (photoRes && CollectionUtils.isNotEmpty(list)) {
-                log.info(Thread.currentThread() + "截取成功!!");
+                log.info(Thread.currentThread() + "-" + key + "截取成功!!");
                 res = true;
+            } else {
+                log.info(Thread.currentThread() + "-" + key + "截取失败!!----" +
+                        "photoRes:" + photoRes + "--position:" + JSON.toJSON(list));
             }
         } catch (Exception e) {
             e.printStackTrace();

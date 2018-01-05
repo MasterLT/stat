@@ -20,6 +20,7 @@ import org.elasticsearch.search.aggregations.bucket.terms.StringTerms.Bucket;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.cardinality.InternalCardinality;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerAdapter;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -86,31 +87,6 @@ public class DataService implements IDataService {
      * @param endDate
      * @return
      */
-    public SearchResponse getDetailFrom1(String index, String keyword, String beginDate, String endDate) {
-//		String index = "logstash-" + region + "-logging-*";
-        String type = "new-logging";
-        EsQuery esquery = new EsQuery();
-        beginDate = beginDate.replaceAll("-", "");
-        endDate = endDate.replaceAll("-", "");
-        long startTime = EsDateUtil.parse(beginDate, EsDateUtil.FORMAT_3).getMillis();
-        long endTime = EsDateUtil.parse(endDate, EsDateUtil.FORMAT_3).plusDays(1).getMillis();
-        //筛选时间和模糊查询关键字
-        BoolQueryBuilder builder = QueryBuilders.boolQuery();
-        builder.must(QueryBuilders.rangeQuery("@timestamp").from(startTime).to(endTime));
-        builder.must(QueryBuilders.wildcardQuery("cpcode.raw", "*" + keyword + "*"));
-        esquery.setQuery(builder);
-        esquery.setPageSize(0);
-        //先对cpcode分组得出匹配的各页面
-        TermsAggregationBuilder aggs = AggregationBuilders.terms("pages").field("cpcode.raw");
-        //再对rpcode分组得到该页面的各个上级页面
-        TermsAggregationBuilder subaggs = AggregationBuilders.terms("beforpages").field("rpcode.raw");
-        subaggs.subAggregation(AggregationBuilders.cardinality("uv").field("stbid.raw"));
-        aggs.subAggregation(subaggs);
-
-        SearchResponse resp = esClient.searchByAggs(index, type, esquery, aggs);
-        return resp;
-    }
-
     public SearchResponse getDetailFrom(String index, String keyword, String beginDate, String endDate) {
 //		String index = "logstash-" + region + "-logging-*";
         String type = "new-logging";
@@ -132,8 +108,7 @@ public class DataService implements IDataService {
         subaggs.subAggregation(AggregationBuilders.cardinality("uv").field("stbid.raw"));
         aggs.subAggregation(subaggs);
 
-        SearchResponse resp = esClient.search(index, type, esquery);
-        List<LogModel> list = EsUtils.getListFromResult(resp, LogModel.class);
+        SearchResponse resp = esClient.searchByAggs(index, type, esquery, aggs);
         return resp;
     }
 

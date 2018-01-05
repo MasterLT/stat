@@ -1,7 +1,5 @@
 package com.wasu.es.model;
 
-import com.wasu.es.controller_pc.DataController;
-
 import java.util.Date;
 
 /**
@@ -9,13 +7,13 @@ import java.util.Date;
  */
 public class LogModel {
     private String rpcode;
-    private Date timestamp;
+    private String timestamp;
 
-    public Date getTimestamp() {
+    public String getTimestamp() {
         return timestamp;
     }
 
-    public void setTimestamp(Date timestamp) {
+    public void setTimestamp(String timestamp) {
         this.timestamp = timestamp;
     }
 

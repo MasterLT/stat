@@ -19,7 +19,7 @@ public class PhantomController {
 
     @RequestMapping()
     @ResponseBody
-    public Object phantom() {
-        return phantomService.phantom();
+    public Object phantom(String region) {
+        return phantomService.phantom(region);
     }
 }

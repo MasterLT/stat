@@ -286,7 +286,7 @@
 			var app = new Vue({
 				el: '#app',
 				data: {
-					serverUrl: '<%=basePath%>data/getIndexData/',
+					serverUrl: '<%=basePath%>disAnalysis/getIndexData/',
 					pngUrl: '${mapDataUrl}',
 					regionKey: '${region}', //hebei
 					endDate:'${endDate}',

@@ -13,6 +13,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import tk.mybatis.mapper.entity.Example;
 
 import java.io.File;
 import java.nio.charset.Charset;
@@ -39,10 +40,18 @@ public class PhantomService {
      *
      * @return 刷新成功地区列表
      */
-    public List<String> phantom() {
+    public List<String> phantom(String regin) {
         List<String> success = Lists.newArrayList();
         List<PhantomRun> threads = Lists.newArrayList();
-        List<StatDistrict> list = statDistrictMapper.selectAll();
+        List<StatDistrict> list = null;
+        if (StringUtils.isEmpty(regin)){
+            list=statDistrictMapper.selectAll();
+        }
+        else {
+            Example example = new Example(StatDistrict.class);
+            example.createCriteria().andEqualTo("districtValue",regin);
+            list=statDistrictMapper.selectByExample(example);
+        }
         //多线程执行
         CountDownLatch latch = new CountDownLatch(list.size());
         ExecutorService executorService = Executors.newFixedThreadPool(list.size());
@@ -62,7 +71,7 @@ public class PhantomService {
             }
         } catch (InterruptedException e) {
             e.printStackTrace();
-        }finally {
+        } finally {
             executorService.shutdown();
         }
         return success;

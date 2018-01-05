@@ -4,6 +4,7 @@ import com.wasu.es.common.Constants;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.aggregations.bucket.terms.StringTerms;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -61,6 +62,11 @@ public class EsUtils {
         return testSum;
     }
 
+    public static StringTerms getAggFromResult(SearchResponse response, String args) {
+        StringTerms internalTerms = response.getAggregations().get(args);
+        return internalTerms;
+    }
+
     public static <T> List<T> getListFromResult(SearchResponse response, Class<T> c) {
         List<T> list = new ArrayList<>();
         SearchHits hits = response.getHits();
@@ -85,9 +91,9 @@ public class EsUtils {
         try {
             Field field = o.getClass().getDeclaredField(key.replaceAll("@", ""));
             field.setAccessible(true);
-            field.set(o, castToClass(field.getDeclaringClass(), value));
+            field.set(o, castToClass(field.getType(), value));
         } catch (NoSuchFieldException e) {
-            e.printStackTrace();
+//            e.printStackTrace();
         } catch (IllegalAccessException e) {
             e.printStackTrace();
         }

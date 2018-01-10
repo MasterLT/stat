@@ -2,7 +2,7 @@ package com.wasu.es.Thread;
 
 import com.alibaba.fastjson.JSON;
 import com.wasu.es.utils.DateUtils;
-import com.wasu.tool.common.util.PhantomTool;
+import com.wasu.es.utils.PhantomTool;
 import lombok.extern.log4j.Log4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;

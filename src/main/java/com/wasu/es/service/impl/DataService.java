@@ -2,8 +2,11 @@ package com.wasu.es.service.impl;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.google.common.collect.Lists;
 import com.wasu.es.model.EsPosPvUv;
 import com.wasu.es.model.LogModel;
+import com.wasu.es.model.dto.DatatablesViewPage;
+import com.wasu.es.model.dto.ResourceDTO;
 import com.wasu.es.service.IDataService;
 import com.wasu.es.utils.EsUtils;
 import com.wasu.es.utils.HttpHelper;
@@ -11,6 +14,7 @@ import com.wasu.tool.es.EsClient;
 import com.wasu.tool.es.EsDateUtil;
 import com.wasu.tool.es.EsQuery;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -79,16 +83,75 @@ public class DataService implements IDataService {
     }
 
     /**
-     * 查询当前页面的入口页面的pv及uv
+     * 查询当前页面上下游页面的pv及uv
      *
      * @param index
      * @param keyword
      * @param beginDate
      * @param endDate
+     * @param queryType 1:上游；2下游
      * @return
      */
-    public SearchResponse getDetailFrom(String index, String keyword, String beginDate, String endDate) {
-//		String index = "logstash-" + region + "-logging-*";
+    public DatatablesViewPage getFromOrToDetail(String index, String keyword, String beginDate, String endDate, int queryType) {
+        String queryField = "cpcode.raw";
+        String aggField = "rpcode.raw";
+        if (queryType == 2) {
+            queryField = "rpcode.raw";
+            aggField = "cpcode.raw";
+        }
+        DatatablesViewPage<ResourceDTO> res = new DatatablesViewPage<>();
+        List<ResourceDTO> list = Lists.newArrayList();
+        res.setAaData(list);
+        if (!StringUtils.isEmpty(keyword) && !StringUtils.isEmpty(beginDate) && !StringUtils.isEmpty(endDate)) {
+            String type = "new-logging";
+            EsQuery esquery = new EsQuery();
+            beginDate = beginDate.replaceAll("-", "");
+            endDate = endDate.replaceAll("-", "");
+            long startTime = EsDateUtil.parse(beginDate, EsDateUtil.FORMAT_3).getMillis();
+            long endTime = EsDateUtil.parse(endDate, EsDateUtil.FORMAT_3).plusDays(1).getMillis();
+            //筛选时间和模糊查询关键字
+            BoolQueryBuilder builder = QueryBuilders.boolQuery();
+            builder.must(QueryBuilders.rangeQuery("@timestamp").from(startTime).to(endTime));
+            builder.must(QueryBuilders.wildcardQuery(queryField, "*" + keyword + "*"));
+            esquery.setQuery(builder);
+            esquery.setPageSize(0);
+            //先对cpcode分组得出匹配的各页面
+//            TermsAggregationBuilder aggs = AggregationBuilders.terms("pages").field("cpcode.raw");
+//            //再对rpcode分组得到该页面的各个上级页面
+//            TermsAggregationBuilder subaggs = AggregationBuilders.terms("beforpages").field("rpcode.raw");
+//            subaggs.subAggregation(AggregationBuilders.cardinality("uv").field("stbid.raw"));
+//            aggs.subAggregation(subaggs);
+            //对rpcode分组得到该页面的各个上级页面
+            TermsAggregationBuilder aggs = AggregationBuilders.terms("page").field(aggField);
+            aggs.subAggregation(AggregationBuilders.cardinality("uv").field("stbid.raw"));
+            SearchResponse resp = esClient.searchByAggs(index, type, esquery, aggs);
+            StringTerms terms = EsUtils.getAggFromResult(resp, "page");
+            for (Bucket bucket : terms.getBuckets()) {
+                String rpcode = bucket.getKeyAsString();
+                Integer pv = (int) bucket.getDocCount();
+                Integer uv = 0;
+                if (bucket.getAggregations() != null) {
+                    InternalCardinality i = bucket.getAggregations().get("uv");
+                    uv = (int) i.getValue();
+                }
+                ResourceDTO dto = new ResourceDTO(rpcode, "", "", pv, uv);
+                list.add(dto);
+            }
+            res.setAaData(list);
+        }
+        return res;
+    }
+
+    /**
+     * 模糊查询获得具体名称
+     *
+     * @param index
+     * @param keyword
+     * @return
+     */
+    @Override
+    public List getRealName(String index, String keyword, String beginDate, String endDate) {
+        List<String> list=Lists.newArrayList();
         String type = "new-logging";
         EsQuery esquery = new EsQuery();
         beginDate = beginDate.replaceAll("-", "");
@@ -103,13 +166,13 @@ public class DataService implements IDataService {
         esquery.setPageSize(0);
         //先对cpcode分组得出匹配的各页面
         TermsAggregationBuilder aggs = AggregationBuilders.terms("pages").field("cpcode.raw");
-        //再对rpcode分组得到该页面的各个上级页面
-        TermsAggregationBuilder subaggs = AggregationBuilders.terms("beforpages").field("rpcode.raw");
-        subaggs.subAggregation(AggregationBuilders.cardinality("uv").field("stbid.raw"));
-        aggs.subAggregation(subaggs);
-
         SearchResponse resp = esClient.searchByAggs(index, type, esquery, aggs);
-        return resp;
+        StringTerms terms = EsUtils.getAggFromResult(resp, "pages");
+        for (Bucket bucket : terms.getBuckets()) {
+            String rpcode = bucket.getKeyAsString();
+            list.add(rpcode);
+        }
+        return list;
     }
 
     private List<EsPosPvUv> build(JSONArray obj, SearchResponse searchResponse) {

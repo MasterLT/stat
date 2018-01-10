@@ -50,7 +50,7 @@
                 <label class="control-label no-padding-right"
                        style="margin-right: -12px">行政区:</label>
             </div>
-            <div class="col-xs-2">
+            <div class="col-xs-1">
                 <select id="district" class="form-control combox" name="district">
                     <c:forEach items="${dis}" var="dDto">
                         <option value="${dDto.value}"
@@ -68,10 +68,21 @@
 
             <div class="col-xs-1" style="text-align: right;">
                 <label class="control-label no-padding-right"
+                       style="margin-right: -12px">查询类型:</label>
+            </div>
+            <div class="col-xs-1">
+                <select id="type" class="form-control">
+                    <option value="1">上游</option>
+                    <option value="2">下游</option>
+                </select>
+            </div>
+
+            <div class="col-xs-1" style="text-align: right;">
+                <label class="control-label no-padding-right"
                        style="margin-right: -12px">查询时间:</label>
             </div>
 
-            <div class="col-xs-5" style="display: flex;">
+            <div class="col-xs-4" style="display: flex;">
                 <div id="reportrange" class="input-prepend input-group" data-date-format="yyyy-mm-dd hh:ii:ss">
 
                     <input id="beginDate" name="beginDate" value="${beginDate}" type="hidden">
@@ -81,28 +92,36 @@
                 </div>
 
                 <div style="margin-left: 20px" style="margin: auto 0;">
-                    <button onclick="search()" class="icon-search btn btn-sm btn-info" data-icon="search">查询</button>
+                    <button onclick="search()" class="icon-search btn btn-sm btn-info">查询</button>
                 </div>
             </div>
         </div>
     </div>
     <div class="hr hr16 hr-dotted"></div>
-    <div id="content"></div>
+    <div id="content">
+        <table id="role-table"
+               class="table table-striped table-bordered table-hover dataTable"
+               aria-describedby="role-table_info">
+            <thead>
+            <tr role="row">
+                <th class="sorting" width="5%">
+                    <small style="font-size: small;">序号</small>
+                </th>
+                <th class="sorting" width="45%">
+                    <small style="font-size: small;">页面名称</small>
+                </th>
+                <th class="sorting" width="25%">
+                    <small style="font-size: small;">pv</small>
+                </th>
+                <th class="sorting" width="25%">
+                    <small style="font-size: small;">uv</small>
+                </th>
+            </tr>
+            </thead>
+            </tbody>
+        </table>
+    </div>
 </div>
-<script type="text/javascript">
-    function search() {
-
-        var beginDate = $('#beginDate').val() == null ? null : $('#beginDate').val();
-        var endDate = $('#endDate').val() == null ? null : $('#endDate').val();
-        var district = $('#district').val();
-        var keyword = $('#keyword').val();
-        var data1 = {beginDate: beginDate, endDate: endDate}
-        var url = "/getMapData/" + $('#district').val();
-
-        window.open("resource/getDetailFromData/"+ district + "?beginDate=" + beginDate + "&endDate=" + endDate  + "&keyword=" + keyword);
-
-    }
-</script>
 <script type="text/javascript" src="assets/js/jquery.dataTables.min.js"></script>
 <script type="text/javascript"
         src="assets/js/jquery.dataTables.bootstrap.js"></script>
@@ -296,4 +315,84 @@
                 $('#endDate').val(end.format('YYYY-MM-DD'));
             });
 </script>
+
+<script type="text/javascript">
+    var oTable1;
+    oTable1 = $('#role-table').DataTable({
+//        serverSide: true,
+        "oLanguage": {
+            "sProcessing": "载入中...",
+            "sLengthMenu": "显示 _MENU_ 项结果",
+            "sZeroRecords": "没有匹配结果",
+            "sInfo": "显示第 _START_ 至 _END_ 项结果，共 _TOTAL_ 项",
+            "sInfoEmpty": "显示第 0 至 0 项结果，共 0 项",
+            "sInfoFiltered": "(由 _MAX_ 项结果过滤)",
+            "sInfoPostFix": "",
+            "sSearch": "搜索:",
+            "sUrl": "",
+            "sEmptyTable": "表中数据为空",
+            "sLoadingRecords": "载入中...",
+            "sInfoThousands": ",",
+            "oPaginate": {
+                "sFirst": "首页",
+                "sPrevious": "上页",
+                "sNext": "下页",
+                "sLast": "末页"
+            },
+            "oAria": {
+                "sSortAscending": ": 以升序排列此列",
+                "sSortDescending": ": 以降序排列此列"
+            }
+        },
+        "ajax": {
+            "url": "resource/getDetailFromData",
+            "dataSrc": "aaData",
+            "data": function (d) {
+                var region = $('#district').val();
+                var beginDate = $('#beginDate').val() == null ? null : $('#beginDate').val();
+                var endDate = $('#endDate').val() == null ? null : $('#endDate').val();
+                var keyword = $('#keyword').val();
+                var dept = $('#dept').val();
+                var type = $('#type').val();
+                //添加额外的参数传给服务器
+                d.region = region;
+                d.beginDate = beginDate;
+                d.endDate = endDate;
+                d.keyword = keyword;
+                d.type = type;
+            }
+        },
+        "columns": [
+            {"data": null},
+            {"data": "rpcode"},
+            /*{"data": "cpcode"},*/
+            /*{"data": "url"},*/
+            {"data": "pv"},
+            {"data": "uv"},
+        ],
+        "processing": true, //打开数据加载时的等待效果
+        "bPaginate": true, //翻页功能
+        "bLengthChange": false, //改变每页显示数据数量
+        "bFilter": false,
+        "fnDrawCallback": function () {
+            this.api().column(0).nodes().each(function (cell, i) {
+                cell.innerHTML = i + 1;
+            });
+        },
+    });
+
+    function search() {
+        oTable1.ajax.reload();
+//        var beginDate = $('#beginDate').val() == null ? null : $('#beginDate').val();
+//        var endDate = $('#endDate').val() == null ? null : $('#endDate').val();
+//        var district = $('#district').val();
+//        var keyword = $('#keyword').val();
+//        var data1 = {beginDate: beginDate, endDate: endDate}
+//        var url = "/getMapData/" + $('#district').val();
+//
+//        window.open("resource/getDetailFromData/" + district + "?beginDate=" + beginDate + "&endDate=" + endDate + "&keyword=" + keyword);
+
+    }
+</script>
+
 

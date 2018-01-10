@@ -44,6 +44,7 @@ public class ShiroConfig {
         filterChainDefinitionMap.put("/oss/system/getClusterStats", "anon");
         filterChainDefinitionMap.put("/oss/**", "anon");
         filterChainDefinitionMap.put("/main/**", "anon");
+        filterChainDefinitionMap.put("/phantom", "anon");
         filterChainDefinitionMap.put("/logout/**", "logout");
         //配置退出 过滤器,其中的具体的退出代码Shiro已经替我们实现了
         filterChainDefinitionMap.put("/logout", "logout");

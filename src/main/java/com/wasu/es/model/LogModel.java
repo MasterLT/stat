@@ -7,7 +7,16 @@ import java.util.Date;
  */
 public class LogModel {
     private String rpcode;
+    private String cpcode;
     private String timestamp;
+
+    public String getCpcode() {
+        return cpcode;
+    }
+
+    public void setCpcode(String cpcode) {
+        this.cpcode = cpcode;
+    }
 
     public String getTimestamp() {
         return timestamp;

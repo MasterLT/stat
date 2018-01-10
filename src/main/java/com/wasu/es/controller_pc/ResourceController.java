@@ -1,10 +1,13 @@
 package com.wasu.es.controller_pc;
 
 import com.alibaba.fastjson.JSONArray;
+import com.google.common.collect.Lists;
 import com.wasu.es.model.EsPosPvUv;
 import com.wasu.es.model.StatDistrict;
 import com.wasu.es.model.StatRole;
+import com.wasu.es.model.dto.DatatablesViewPage;
 import com.wasu.es.model.dto.ModelDTO;
+import com.wasu.es.model.dto.ResourceDTO;
 import com.wasu.es.service.IDataService;
 import com.wasu.es.utils.GodUtils;
 import com.wasu.es.utils.HttpHelper;
@@ -23,47 +26,47 @@ import java.util.List;
 
 @Controller
 @RequestMapping(value = "/resource")
-public class ResourceController extends PageBeanControl<StatRole>{
+public class ResourceController extends PageBeanControl<StatRole> {
 
-	@Resource
-	private IDataService iDataService;
+    @Resource
+    private IDataService iDataService;
 
-	@Value("${mapDataUrl}")
-	private String mapDataUrl;
+    @Value("${mapDataUrl}")
+    private String mapDataUrl;
 
-	/**
-	 * 来源分析
-	 * @param model
-	 * @param request
-	 * @return
-	 */
-	@RequestMapping()
-	public String resource(Model model, HttpServletRequest request) {
-		List<StatDistrict> district = (List<StatDistrict>) request.getSession()
-				.getAttribute("userDistrict");
-		List<ModelDTO> dis = new ArrayList<ModelDTO>();
-		if (!GodUtils.CheckNull(district)) {
-			for (StatDistrict statDistrict : district) {
-				dis.add(new ModelDTO(statDistrict.getDistrictName(),
-						statDistrict.getDistrictValue()));
-			}
-		}
-		model.addAttribute("dis", dis);
-		return "data_resource";
-	}
+    /**
+     * 来源分析
+     *
+     * @param model
+     * @param request
+     * @return
+     */
+    @RequestMapping()
+    public String resource(Model model, HttpServletRequest request) {
+        List<StatDistrict> district = (List<StatDistrict>) request.getSession()
+                .getAttribute("userDistrict");
+        List<ModelDTO> dis = new ArrayList<ModelDTO>();
+        if (!GodUtils.CheckNull(district)) {
+            for (StatDistrict statDistrict : district) {
+                dis.add(new ModelDTO(statDistrict.getDistrictName(),
+                        statDistrict.getDistrictValue()));
+            }
+        }
+        model.addAttribute("dis", dis);
+        return "data_resource";
+    }
 
-	@RequestMapping(value = "/getDetailFromData/{region}", produces = "application/json;charset=UTF-8")
-	@ResponseBody
-	public Object getDetailFromData(@PathVariable String region, HttpServletRequest request) throws Exception {
-		String beginDate = request.getParameter("beginDate");
-		String endDate = request.getParameter("endDate");
-		String keyword = request.getParameter("keyword");
-
-		//获取es信息
-		SearchResponse searchResponse = iDataService.getDetailFrom("logstash-" + region + "-logging-*", keyword, beginDate, endDate);
-		if (searchResponse == null) {
-			return null;
-		}
-		return searchResponse;
-	}
+//    @RequestMapping(value = "/getDetailFromData/{region}", produces = "application/json;charset=UTF-8")
+    @RequestMapping("/getDetailFromData")
+    @ResponseBody
+    public Object getDetailFromData(String region, String beginDate, String endDate, String keyword, Integer type) throws Exception {
+        DatatablesViewPage<ResourceDTO> res = iDataService.getFromOrToDetail("logstash-" + region + "-logging-*", keyword, beginDate, endDate,type);
+        return res;
+    }
+    @RequestMapping("/getRealName")
+    @ResponseBody
+    public Object getRealName(String region, String beginDate, String endDate, String keyword) throws Exception {
+        List res = iDataService.getRealName("logstash-" + region + "-logging-*", keyword, beginDate, endDate);
+        return res;
+    }
 }

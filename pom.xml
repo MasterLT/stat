@@ -61,6 +61,7 @@
         <downloadSources>true</downloadSources>
 
         <es.version>5.6.4</es.version>
+        <!--<es.version>2.1.1</es.version>-->
     </properties>
 
     <dependencies>

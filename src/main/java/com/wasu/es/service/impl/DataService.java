@@ -8,6 +8,7 @@ import com.wasu.es.model.LogModel;
 import com.wasu.es.model.dto.DatatablesViewPage;
 import com.wasu.es.model.dto.ResourceDTO;
 import com.wasu.es.service.IDataService;
+import com.wasu.es.utils.DateUtils;
 import com.wasu.es.utils.EsUtils;
 import com.wasu.es.utils.HttpHelper;
 import com.wasu.tool.es.EsClient;
@@ -67,8 +68,13 @@ public class DataService implements IDataService {
         endDate = endDate.replaceAll("-", "");
         long startTime = EsDateUtil.parse(beginDate, EsDateUtil.FORMAT_3).getMillis();
         long endTime = EsDateUtil.parse(endDate, EsDateUtil.FORMAT_3).plusDays(1).getMillis();
+        List<String> list = DateUtils.getAllDayString(startTime, endTime);
+        String[] indexs = new String[list.size()];
+        for (int i = 0; i < list.size(); i++) {
+            indexs[i] = index + list.get(i);
+        }
         BoolQueryBuilder builder = QueryBuilders.boolQuery();
-        builder.must(QueryBuilders.rangeQuery("@timestamp").from(startTime).to(endTime));
+//        builder.must(QueryBuilders.rangeQuery("@timestamp").from(startTime).to(endTime));
         builder.must(QueryBuilders.termQuery("rpname.raw", rpname));
         esquery.setQuery(builder);
         esquery.setPageSize(0);
@@ -77,7 +83,7 @@ public class DataService implements IDataService {
         aggs.subAggregation(AggregationBuilders.terms("name").field("cpname.raw")
                 .subAggregation(AggregationBuilders.cardinality("uv").field("stbid.raw")));
 
-        SearchResponse resp1 = esClient.searchByAggs(index, type, esquery, aggs);
+        SearchResponse resp1 = esClient.searchByAggs(indexs, type, esquery, aggs);
         // System.out.println("result:" + resp1.toString());
         return resp1;
     }
@@ -151,7 +157,7 @@ public class DataService implements IDataService {
      */
     @Override
     public List getRealName(String index, String keyword, String beginDate, String endDate) {
-        List<String> list=Lists.newArrayList();
+        List<String> list = Lists.newArrayList();
         String type = "new-logging";
         EsQuery esquery = new EsQuery();
         beginDate = beginDate.replaceAll("-", "");

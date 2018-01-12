@@ -87,7 +87,7 @@ public class DisAnalysisController extends PageBeanControl<StatRole>{
 		String rpname = getRpnameByRegion(region);
 
 		//获取es信息
-		SearchResponse searchResponse = iDataService.getLogsByExample("logstash-" + region + "-logging-*", region, rpname, beginDate, endDate);
+		SearchResponse searchResponse = iDataService.getLogsByExample("logstash-" + region + "-logging-", region, rpname, beginDate, endDate);
 		if (searchResponse == null) {
 			return null;
 		}

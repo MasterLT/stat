@@ -33,6 +33,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -177,7 +178,7 @@ public class DataService implements IDataService {
      */
     @Override
     public List getRealName(String index, String keyword, String beginDate, String endDate) {
-        List<String> list = Lists.newArrayList();
+        List<Map> list = Lists.newArrayList();
         String type = "new-logging";
         EsQuery esquery = new EsQuery();
         beginDate = beginDate.replaceAll("-", "");
@@ -196,7 +197,10 @@ public class DataService implements IDataService {
         StringTerms terms = EsUtils.getAggFromResult(resp, "pages");
         for (Bucket bucket : terms.getBuckets()) {
             String rpcode = bucket.getKeyAsString();
-            list.add(rpcode);
+            Map map=new HashMap();
+            map.put("value",rpcode);
+            map.put("label",rpcode);
+            list.add(map);
         }
         return list;
     }

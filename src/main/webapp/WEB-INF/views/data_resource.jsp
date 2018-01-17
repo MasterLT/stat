@@ -15,6 +15,8 @@
 <script type="text/javascript" src="js/moment.js"></script>
 <script src="assets/js/date-time/moment.min.js"></script>
 <script src="assets/js/date-time/daterangepicker.min.js"></script>
+<script src="assets/js/jquery.autocompleter.js"></script>
+<link rel="stylesheet" href="assets/css/jquery.autocompleter.css">
 
 <style>
     body {
@@ -62,15 +64,15 @@
                 <label class="control-label no-padding-right"
                        style="margin-right: -12px">关键词:</label>
             </div>
-            <div class="col-xs-2">
-                <input id="keyword" class="form-control input"/>
+            <div class="col-xs-2" class="ui-widget">
+                <input id="keyword" class="form-control input" onchange="getPageName()"/>
             </div>
 
-            <div class="col-xs-1" style="text-align: right;">
+            <%--<div class="col-xs-1" style="text-align: right;">
                 <label class="control-label no-padding-right"
                        style="margin-right: -12px">查询类型:</label>
             </div>
-            <%--<div class="col-xs-1">
+            <div class="col-xs-1">
                 <select id="type" class="form-control">
                     <option value="1">上游</option>
                     <option value="2">下游</option>
@@ -403,8 +405,8 @@
                 "keyword": keyword,
             },
             success: function (data) {
-                freshOpt(from,data[0]);
-                freshOpt(to,data[1]);
+                freshOpt(from, data[0]);
+                freshOpt(to, data[1]);
             }
         });
     }
@@ -412,38 +414,68 @@
     function freshOpt(from, data) {
         // 指定图表的配置项和数据
         var option = {
-                title: {
-                    text: data.title,
-                    x: 'center'
-                },
-                tooltip: {
-                    trigger: 'item',
-                    formatter: "{a} <br/>{b} : {c} ({d}%)"
-                },
-                legend: {
-                    orient: 'vertical',
-                    left: 'left',
-                    data: data.vertical
-                },
-                series: [
-                    {
-                        name: '访问来源',
-                        type: 'pie',
-                        radius: '55%',
-                        center: ['50%', '60%'],
-                        data: data.data,
-                        itemStyle: {
-                            emphasis: {
-                                shadowBlur: 10,
-                                shadowOffsetX: 0,
-                                shadowColor: 'rgba(0, 0, 0, 0.5)'
-                            }
+            title: {
+                text: data.title,
+                x: 'center'
+            },
+            tooltip: {
+                trigger: 'item',
+                formatter: "{a} <br/>{b} : {c} ({d}%)"
+            },
+            legend: {
+                orient: 'vertical',
+                left: 'left',
+                data: data.vertical
+            },
+            series: [
+                {
+                    name: '访问来源',
+                    type: 'pie',
+                    radius: '55%',
+                    center: ['50%', '60%'],
+                    data: data.data,
+                    itemStyle: {
+                        emphasis: {
+                            shadowBlur: 10,
+                            shadowOffsetX: 0,
+                            shadowColor: 'rgba(0, 0, 0, 0.5)'
                         }
                     }
-                ]
-            };
+                }
+            ]
+        };
         // 使用刚指定的配置项和数据显示图表。
         from.setOption(option);
+    }
+
+    function getPageName() {
+        var region = $('#district').val();
+        var beginDate = $('#beginDate').val() == null ? null : $('#beginDate').val();
+        var endDate = $('#endDate').val() == null ? null : $('#endDate').val();
+        var keyword = $('#keyword').val();
+        $.ajax({
+            url: "resource/getRealName",
+            type: "post",
+            dataType: "json",
+            data: {
+                "region": region,
+                "beginDate": beginDate,
+                "endDate": endDate,
+                "keyword": keyword,
+            },
+            success: function (data) {
+                console.log(data);
+                $('#keyword').autocompleter('destroy');
+                $("#keyword").autocompleter({
+                    highlightMatches: true,
+                    template: '{{ label }}',
+                    hint: true,
+                    empty: false,
+                    limit: 10,
+                    source: data
+                });
+            }
+        });
     }
 </script>
 

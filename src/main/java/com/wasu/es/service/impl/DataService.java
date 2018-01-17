@@ -3,9 +3,11 @@ package com.wasu.es.service.impl;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.wasu.es.model.EsPosPvUv;
 import com.wasu.es.model.LogModel;
 import com.wasu.es.model.dto.DatatablesViewPage;
+import com.wasu.es.model.dto.PieChartDTO;
 import com.wasu.es.model.dto.ResourceDTO;
 import com.wasu.es.service.IDataService;
 import com.wasu.es.utils.DateUtils;
@@ -29,8 +31,10 @@ import org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerAda
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service("IDataService")
@@ -98,16 +102,19 @@ public class DataService implements IDataService {
      * @param queryType 1:上游；2下游
      * @return
      */
-    public DatatablesViewPage getFromOrToDetail(String index, String keyword, String beginDate, String endDate, int queryType) {
+    public PieChartDTO getFromOrToDetail(String index, String keyword, String beginDate, String endDate, int queryType) {
+        PieChartDTO pieChartDTO = new PieChartDTO();
         String queryField = "cpcode.raw";
         String aggField = "rpcode.raw";
+        pieChartDTO.setTitle(keyword + "上游统计");
         if (queryType == 2) {
             queryField = "rpcode.raw";
             aggField = "cpcode.raw";
+            pieChartDTO.setTitle(keyword + "下游统计");
         }
-        DatatablesViewPage<ResourceDTO> res = new DatatablesViewPage<>();
-        List<ResourceDTO> list = Lists.newArrayList();
-        res.setAaData(list);
+        List<Map> list = Lists.newArrayList();
+        List<String> tiles = Lists.newArrayList();
+        double total = 0;
         if (!StringUtils.isEmpty(keyword) && !StringUtils.isEmpty(beginDate) && !StringUtils.isEmpty(endDate)) {
             String type = "new-logging";
             EsQuery esquery = new EsQuery();
@@ -133,19 +140,32 @@ public class DataService implements IDataService {
             SearchResponse resp = esClient.searchByAggs(index, type, esquery, aggs);
             StringTerms terms = EsUtils.getAggFromResult(resp, "page");
             for (Bucket bucket : terms.getBuckets()) {
-                String rpcode = bucket.getKeyAsString();
+                String name = bucket.getKeyAsString();
                 Integer pv = (int) bucket.getDocCount();
                 Integer uv = 0;
                 if (bucket.getAggregations() != null) {
                     InternalCardinality i = bucket.getAggregations().get("uv");
                     uv = (int) i.getValue();
                 }
-                ResourceDTO dto = new ResourceDTO(rpcode, "", "", pv, uv);
-                list.add(dto);
+                Map map = Maps.newHashMap();
+                map.put("value", pv);
+                map.put("name", name);
+                list.add(map);
+                total += pv;
             }
-            res.setAaData(list);
+            DecimalFormat df = new DecimalFormat("######0.00");
+            for (Map map : list) {
+                String name = (String) map.get("name");
+                int pv = (int) map.get("value");
+                double p = pv * 100 / total;
+                String title = name + "(" + df.format(p) + "%)";
+                map.put("name", title);
+                tiles.add(title);
+            }
+            pieChartDTO.setVertical(tiles);
+            pieChartDTO.setData(list);
         }
-        return res;
+        return pieChartDTO;
     }
 
     /**

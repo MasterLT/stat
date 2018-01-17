@@ -15,6 +15,8 @@
 <script type="text/javascript" src="js/moment.js"></script>
 <script src="assets/js/date-time/moment.min.js"></script>
 <script src="assets/js/date-time/daterangepicker.min.js"></script>
+<!-- 引入 ECharts 文件 -->
+<script src="js/echarts/echarts.min.js"></script>
 
 <style>
     body {
@@ -70,12 +72,12 @@
                 <label class="control-label no-padding-right"
                        style="margin-right: -12px">查询类型:</label>
             </div>
-            <%--<div class="col-xs-1">
+            <div class="col-xs-1">
                 <select id="type" class="form-control">
                     <option value="1">上游</option>
                     <option value="2">下游</option>
                 </select>
-            </div>--%>
+            </div>
 
             <div class="col-xs-1" style="text-align: right;">
                 <label class="control-label no-padding-right"
@@ -99,7 +101,7 @@
     </div>
     <div class="hr hr16 hr-dotted"></div>
     <div id="content">
-        <%--<table id="role-table"
+        <table id="role-table"
                class="table table-striped table-bordered table-hover dataTable"
                aria-describedby="role-table_info">
             <thead>
@@ -119,14 +121,10 @@
             </tr>
             </thead>
             </tbody>
-        </table>--%>
-        <div id="from" class="col-xs-6" style="height:800px;"></div>
-        <div id="to" class="col-xs-6" style="height:800px;"></div>
+        </table>
     </div>
 </div>
 <script type="text/javascript" src="assets/js/jquery.dataTables.min.js"></script>
-<!-- 引入 ECharts 文件 -->
-<script src="assets/js/echarts.common.min.js"></script>
 <script type="text/javascript"
         src="assets/js/jquery.dataTables.bootstrap.js"></script>
 <script type="text/javascript">
@@ -321,130 +319,86 @@
 </script>
 
 <script type="text/javascript">
-    /*var oTable1;
-     oTable1 = $('#role-table').DataTable({
-     //        serverSide: true,
-     "oLanguage": {
-     "sProcessing": "载入中...",
-     "sLengthMenu": "显示 _MENU_ 项结果",
-     "sZeroRecords": "没有匹配结果",
-     "sInfo": "显示第 _START_ 至 _END_ 项结果，共 _TOTAL_ 项",
-     "sInfoEmpty": "显示第 0 至 0 项结果，共 0 项",
-     "sInfoFiltered": "(由 _MAX_ 项结果过滤)",
-     "sInfoPostFix": "",
-     "sSearch": "搜索:",
-     "sUrl": "",
-     "sEmptyTable": "表中数据为空",
-     "sLoadingRecords": "载入中...",
-     "sInfoThousands": ",",
-     "oPaginate": {
-     "sFirst": "首页",
-     "sPrevious": "上页",
-     "sNext": "下页",
-     "sLast": "末页"
-     },
-     "oAria": {
-     "sSortAscending": ": 以升序排列此列",
-     "sSortDescending": ": 以降序排列此列"
-     }
-     },
-     "ajax": {
-     "url": "resource/getDetailFromData",
-     "dataSrc": "aaData",
-     "data": function (d) {
-     var region = $('#district').val();
-     var beginDate = $('#beginDate').val() == null ? null : $('#beginDate').val();
-     var endDate = $('#endDate').val() == null ? null : $('#endDate').val();
-     var keyword = $('#keyword').val();
-     var dept = $('#dept').val();
-     var type = $('#type').val();
-     //添加额外的参数传给服务器
-     d.region = region;
-     d.beginDate = beginDate;
-     d.endDate = endDate;
-     d.keyword = keyword;
-     d.type = type;
-     }
-     },
-     "columns": [
-     {"data": null},
-     {"data": "rpcode"},
-     /!*{"data": "cpcode"},*!/
-     /!*{"data": "url"},*!/
-     {"data": "pv"},
-     {"data": "uv"},
-     ],
-     "processing": true, //打开数据加载时的等待效果
-     "bPaginate": true, //翻页功能
-     "bLengthChange": false, //改变每页显示数据数量
-     "bFilter": false,
-     "fnDrawCallback": function () {
-     this.api().column(0).nodes().each(function (cell, i) {
-     cell.innerHTML = i + 1;
-     });
-     },
-     });*/
-    function search() {
-        var region = $('#district').val();
-        var beginDate = $('#beginDate').val() == null ? null : $('#beginDate').val();
-        var endDate = $('#endDate').val() == null ? null : $('#endDate').val();
-        var keyword = $('#keyword').val();
-        // 基于准备好的dom，初始化echarts实例
-        var from = echarts.init(document.getElementById('from'));
-        var to = echarts.init(document.getElementById('to'));
-        $.ajax({
-            url: "resource/getDetailFromData",
-            type: "post",
-            dataType: "json",
-            data: {
-                "region": region,
-                "beginDate": beginDate,
-                "endDate": endDate,
-                "keyword": keyword,
+    var oTable1;
+    oTable1 = $('#role-table').DataTable({
+//        serverSide: true,
+        "oLanguage": {
+            "sProcessing": "载入中...",
+            "sLengthMenu": "显示 _MENU_ 项结果",
+            "sZeroRecords": "没有匹配结果",
+            "sInfo": "显示第 _START_ 至 _END_ 项结果，共 _TOTAL_ 项",
+            "sInfoEmpty": "显示第 0 至 0 项结果，共 0 项",
+            "sInfoFiltered": "(由 _MAX_ 项结果过滤)",
+            "sInfoPostFix": "",
+            "sSearch": "搜索:",
+            "sUrl": "",
+            "sEmptyTable": "表中数据为空",
+            "sLoadingRecords": "载入中...",
+            "sInfoThousands": ",",
+            "oPaginate": {
+                "sFirst": "首页",
+                "sPrevious": "上页",
+                "sNext": "下页",
+                "sLast": "末页"
             },
-            success: function (data) {
-                freshOpt(from,data[0]);
-                freshOpt(to,data[1]);
+            "oAria": {
+                "sSortAscending": ": 以升序排列此列",
+                "sSortDescending": ": 以降序排列此列"
             }
-        });
-    }
+        },
+        "ajax": {
+            "url": "resource/getDetailFromData",
+            "dataSrc": "aaData",
+            "data": function (d) {
+                var region = $('#district').val();
+                var beginDate = $('#beginDate').val() == null ? null : $('#beginDate').val();
+                var endDate = $('#endDate').val() == null ? null : $('#endDate').val();
+                var keyword = $('#keyword').val();
+                var dept = $('#dept').val();
+                var type = $('#type').val();
+                //添加额外的参数传给服务器
+                d.region = region;
+                d.beginDate = beginDate;
+                d.endDate = endDate;
+                d.keyword = keyword;
+                d.type = type;
+            }
+        },
+        "columns": [
+            {"data": null},
+            {"data": "rpcode"},
+            /*{"data": "cpcode"},*/
+            /*{"data": "url"},*/
+            {"data": "pv"},
+            {"data": "uv"},
+        ],
+        "processing": true, //打开数据加载时的等待效果
+        "bPaginate": true, //翻页功能
+        "bLengthChange": false, //改变每页显示数据数量
+        "bFilter": false,
+        "fnDrawCallback": function () {
+            this.api().column(0).nodes().each(function (cell, i) {
+                cell.innerHTML = i + 1;
+            });
+        },
+    });
 
-    function freshOpt(from, data) {
-        // 指定图表的配置项和数据
-        var option = {
-                title: {
-                    text: data.title,
-                    x: 'center'
-                },
-                tooltip: {
-                    trigger: 'item',
-                    formatter: "{a} <br/>{b} : {c} ({d}%)"
-                },
-                legend: {
-                    orient: 'vertical',
-                    left: 'left',
-                    data: data.vertical
-                },
-                series: [
-                    {
-                        name: '访问来源',
-                        type: 'pie',
-                        radius: '55%',
-                        center: ['50%', '60%'],
-                        data: data.data,
-                        itemStyle: {
-                            emphasis: {
-                                shadowBlur: 10,
-                                shadowOffsetX: 0,
-                                shadowColor: 'rgba(0, 0, 0, 0.5)'
-                            }
-                        }
-                    }
-                ]
-            };
-        // 使用刚指定的配置项和数据显示图表。
-        from.setOption(option);
+    function search() {
+        oTable1.ajax.reload();
+//        var beginDate = $('#beginDate').val() == null ? null : $('#beginDate').val();
+//        var endDate = $('#endDate').val() == null ? null : $('#endDate').val();
+//        var district = $('#district').val();
+//        var keyword = $('#keyword').val();
+//        var data1 = {beginDate: beginDate, endDate: endDate}
+//        var url = "/getMapData/" + $('#district').val();
+//
+//        window.open("resource/getDetailFromData/" + district + "?beginDate=" + beginDate + "&endDate=" + endDate + "&keyword=" + keyword);
+
     }
+</script>
+
+<script>
+
 </script>
 
 

@@ -1,5 +1,6 @@
 package com.wasu.es;
 
+import com.github.pagehelper.PageInterceptor;
 import com.wasu.es.model.StatConfig;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
@@ -14,6 +15,6 @@ import java.util.List;
 public class StatWebApplication {
 
     public static void main(String[] args) throws InstantiationException, IllegalAccessException {
-        SpringApplication.run(StatWebApplication.class, args);
+        SpringApplication.run(StatWebApplication.class, args);PageInterceptor p;
     }
 }

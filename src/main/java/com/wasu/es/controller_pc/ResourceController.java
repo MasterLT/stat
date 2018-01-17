@@ -7,6 +7,7 @@ import com.wasu.es.model.StatDistrict;
 import com.wasu.es.model.StatRole;
 import com.wasu.es.model.dto.DatatablesViewPage;
 import com.wasu.es.model.dto.ModelDTO;
+import com.wasu.es.model.dto.PieChartDTO;
 import com.wasu.es.model.dto.ResourceDTO;
 import com.wasu.es.service.IDataService;
 import com.wasu.es.utils.GodUtils;
@@ -56,13 +57,16 @@ public class ResourceController extends PageBeanControl<StatRole> {
         return "data_resource";
     }
 
-//    @RequestMapping(value = "/getDetailFromData/{region}", produces = "application/json;charset=UTF-8")
+    //    @RequestMapping(value = "/getDetailFromData/{region}", produces = "application/json;charset=UTF-8")
     @RequestMapping("/getDetailFromData")
     @ResponseBody
-    public Object getDetailFromData(String region, String beginDate, String endDate, String keyword, Integer type) throws Exception {
-        DatatablesViewPage<ResourceDTO> res = iDataService.getFromOrToDetail("logstash-" + region + "-logging-*", keyword, beginDate, endDate,type);
+    public Object getDetailFromData(String region, String beginDate, String endDate, String keyword) throws Exception {
+        PieChartDTO[] res = new PieChartDTO[2];
+        res[0] = iDataService.getFromOrToDetail("logstash-" + region + "-logging-*", keyword, beginDate, endDate, 1);
+        res[1] = iDataService.getFromOrToDetail("logstash-" + region + "-logging-*", keyword, beginDate, endDate, 2);
         return res;
     }
+
     @RequestMapping("/getRealName")
     @ResponseBody
     public Object getRealName(String region, String beginDate, String endDate, String keyword) throws Exception {

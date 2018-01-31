@@ -15,6 +15,6 @@ import java.util.List;
 public class StatWebApplication {
 
     public static void main(String[] args) throws InstantiationException, IllegalAccessException {
-        SpringApplication.run(StatWebApplication.class, args);PageInterceptor p;
+        SpringApplication.run(StatWebApplication.class, args);
     }
 }

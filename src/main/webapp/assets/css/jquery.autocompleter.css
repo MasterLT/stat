@@ -19,6 +19,7 @@
 .autocompleter-hint {
     position: absolute;
     z-index:999;
+    background:rgba(255,255,255,0.8);
 }
 
 .autocompleter-list {
@@ -31,6 +32,7 @@
 
 .autocompleter-item {
     cursor: pointer;
+    z-index:999;
 }
 
 .autocompleter-item:hover {

@@ -1,7 +1,15 @@
 package com.wasu.es;
 
+import com.wasu.es.aop.TimeHandler;
+import com.wasu.es.service.IDataService;
+import com.wasu.es.service.impl.DataService;
 import org.apache.commons.lang3.time.DateFormatUtils;
+import org.mybatis.spring.mapper.MapperFactoryBean;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.cglib.proxy.Proxy;
+import tk.mybatis.mapper.provider.SpecialProvider;
 
+import java.lang.reflect.InvocationHandler;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -11,12 +19,10 @@ import java.util.Date;
  */
 public class Test {
     public static void main(String[] args) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd");
-        try {
-            System.out.println(sdf.parse("2017.11.15").getTime());
-            System.out.println(sdf.parse("2017.11.22").getTime());
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
+        IDataService iDataService = new DataService();
+        InvocationHandler handler = new TimeHandler(iDataService);
+        IDataService Proxy= (IDataService)java.lang.reflect.Proxy.newProxyInstance(ClassLoader.getSystemClassLoader(),new Class[]{IDataService.class},handler);
+        Proxy.toString();
+        SpecialProvider a;
     }
 }

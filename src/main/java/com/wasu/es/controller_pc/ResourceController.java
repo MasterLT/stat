@@ -24,6 +24,8 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
+import java.util.concurrent.*;
 
 @Controller
 @RequestMapping(value = "/resource")
@@ -61,9 +63,26 @@ public class ResourceController extends PageBeanControl<StatRole> {
     @RequestMapping("/getDetailFromData")
     @ResponseBody
     public Object getDetailFromData(String region, String beginDate, String endDate, String keyword) throws Exception {
+        long start = System.currentTimeMillis();
         PieChartDTO[] res = new PieChartDTO[2];
-        res[0] = iDataService.getFromOrToDetail("logstash-" + region + "-logging-*", keyword, beginDate, endDate, 1);
-        res[1] = iDataService.getFromOrToDetail("logstash-" + region + "-logging-*", keyword, beginDate, endDate, 2);
+        ExecutorService executorService = Executors.newFixedThreadPool(2);
+        try {
+            Future<PieChartDTO> fromData = executorService.submit(new Callable<PieChartDTO>() {
+                public PieChartDTO call() throws Exception {
+                    return iDataService.getFromOrToDetail("logstash-" + region + "-logging-*", keyword, beginDate, endDate, 1);
+                }
+            });
+            Future<PieChartDTO> toData = executorService.submit(new Callable<PieChartDTO>() {
+                public PieChartDTO call() throws Exception {
+                    return iDataService.getToDetail("logstash-" + region + "-logging-*", keyword, beginDate, endDate);
+                }
+            });
+            res[0] = fromData.get();
+            res[1] = toData.get();
+            System.out.println(System.currentTimeMillis() - start);
+        } finally {
+            executorService.shutdown();
+        }
         return res;
     }
 

@@ -62,7 +62,7 @@
             </div>
             <div class="col-xs-1" style="text-align: right;">
                 <label class="control-label no-padding-right"
-                       style="margin-right: -12px">关键词:</label>
+                       style="margin-right: -12px">片名:</label>
             </div>
             <div class="col-xs-2" class="ui-widget">
                 <input id="keyword" class="form-control input" onchange="getPageName()"/>
@@ -122,8 +122,14 @@
             </thead>
             </tbody>
         </table>--%>
-        <div id="from" class="col-xs-6" style="height:800px;"></div>
-        <div id="to" class="col-xs-6" style="height:800px;"></div>
+        <div class="col-xs-6">
+            <h2 id="fromtitle"></h2>
+            <div id="from" style="height:800px;"></div>
+        </div>
+        <div class="col-xs-6">
+            <h2 id="totitle"></h2>
+            <div id="to" style="height:800px;"></div>
+        </div>
     </div>
 </div>
 <script type="text/javascript" src="assets/js/jquery.dataTables.min.js"></script>
@@ -405,19 +411,19 @@
                 "keyword": keyword,
             },
             success: function (data) {
-                freshOpt(from, data[0]);
-                freshOpt(to, data[1]);
+                freshOpt(from, data[0],'#fromtitle');
+                freshOpt(to, data[1],'#totitle');
             }
         });
     }
 
-    function freshOpt(from, data) {
+    function freshOpt(from, data, id) {
         // 指定图表的配置项和数据
         var option = {
-            title: {
+            /*title: {
                 text: data.title,
                 x: 'center'
-            },
+            },*/
             tooltip: {
                 trigger: 'item',
                 formatter: "{a} <br/>{b} : {c} ({d}%)"
@@ -431,7 +437,7 @@
                 {
                     name: '访问来源',
                     type: 'pie',
-                    radius: '55%',
+                    radius: '45%',
                     center: ['50%', '60%'],
                     data: data.data,
                     itemStyle: {
@@ -444,6 +450,7 @@
                 }
             ]
         };
+        $(id).html(data.title);
         // 使用刚指定的配置项和数据显示图表。
         from.setOption(option);
     }

@@ -111,6 +111,12 @@ public class DataService implements IDataService {
         if (queryType == 2) {
             queryField = "rpcode.raw";
             aggField = "cpcode.raw";
+            //如果是下游统计则剔除第三位置字段
+            // 例如“少儿电影详情页^小马宝莉大电影4无尽森林传说^海报列表”
+            //中“^海报列表”为上页面的位置信息，因此统计时需要截掉
+            if (keyword.split("\\^").length == 3) {
+                keyword = keyword.split("\\^")[0] + "^" + keyword.split("\\^")[1];
+            }
             pieChartDTO.setTitle(keyword + "下游统计");
         }
         List<Map> list = Lists.newArrayList();
@@ -126,7 +132,8 @@ public class DataService implements IDataService {
             //筛选时间和模糊查询关键字
             BoolQueryBuilder builder = QueryBuilders.boolQuery();
             builder.must(QueryBuilders.rangeQuery("@timestamp").from(startTime).to(endTime));
-            builder.must(QueryBuilders.wildcardQuery(queryField, "*" + keyword + "*"));
+            builder.must(QueryBuilders.wildcardQuery(queryField, keyword + "*"));
+//            builder.must(QueryBuilders.termQuery(queryField, keyword ));
             esquery.setQuery(builder);
             esquery.setPageSize(0);
             //先对cpcode分组得出匹配的各页面
@@ -154,19 +161,91 @@ public class DataService implements IDataService {
                 list.add(map);
                 total += pv;
             }
-            DecimalFormat df = new DecimalFormat("######0.00");
-            for (Map map : list) {
-                String name = (String) map.get("name");
-                int pv = (int) map.get("value");
-                double p = pv * 100 / total;
-                String title = name + "(" + df.format(p) + "%)";
-                map.put("name", title);
-                tiles.add(title);
-            }
+            computeTitles(list, tiles, total);
             pieChartDTO.setVertical(tiles);
             pieChartDTO.setData(list);
         }
         return pieChartDTO;
+    }
+
+    /**
+     * 查询当前页面下游页面的pv及uv
+     *
+     * @param index
+     * @param keyword
+     * @param beginDate
+     * @param endDate
+     * @return
+     */
+    public PieChartDTO getToDetail(String index, String keyword, String beginDate, String endDate) {
+        PieChartDTO pieChartDTO = new PieChartDTO();
+        pieChartDTO.setTitle(keyword + "下游统计");
+        List<Map> list = Lists.newArrayList();
+        List<String> tiles = Lists.newArrayList();
+        String[] keys = keyword.split("\\^");
+        double total = 0;
+        if (keys.length == 2 && !StringUtils.isEmpty(keyword) && !StringUtils.isEmpty(beginDate) && !StringUtils.isEmpty(endDate)) {
+            String type = "new-logging";
+            EsQuery esquery = new EsQuery();
+            beginDate = beginDate.replaceAll("-", "");
+            endDate = endDate.replaceAll("-", "");
+            long startTime = EsDateUtil.parse(beginDate, EsDateUtil.FORMAT_3).getMillis();
+            long endTime = EsDateUtil.parse(endDate, EsDateUtil.FORMAT_3).plusDays(1).getMillis();
+            //筛选时间和模糊查询关键字
+            BoolQueryBuilder builder = QueryBuilders.boolQuery();
+            builder.must(QueryBuilders.rangeQuery("@timestamp").from(startTime).to(endTime));
+            builder.must(QueryBuilders.termQuery("rpcode.raw", keyword));
+            esquery.setQuery(builder);
+            esquery.setPageSize(0);
+            //对rpcode分组得到该页面的各个上级页面
+            TermsAggregationBuilder aggs = AggregationBuilders.terms("type").field("cptype.raw");
+            aggs.subAggregation(AggregationBuilders.terms("page").field("cpname.raw")
+                    .subAggregation(AggregationBuilders.cardinality("uv").field("stbid.raw")));
+            SearchResponse resp = esClient.searchByAggs(index, type, esquery, aggs);
+            StringTerms terms = EsUtils.getAggFromResult(resp, "type");
+            for (Bucket b : terms.getBuckets()) {
+                String cptype = b.getKeyAsString();
+                StringTerms subterms = b.getAggregations().get("page");
+                for (Bucket bucket : subterms.getBuckets()) {
+                    String name = cptype + "^" + bucket.getKeyAsString();
+                    Integer pv = (int) bucket.getDocCount();
+                    Integer uv = 0;
+                    if (bucket.getAggregations() != null) {
+                        InternalCardinality i = bucket.getAggregations().get("uv");
+                        uv = (int) i.getValue();
+                    }
+                    Map map = Maps.newHashMap();
+                    map.put("value", pv);
+                    map.put("name", name);
+                    list.add(map);
+                    total += pv;
+                }
+            }
+            computeTitles(list, tiles, total);
+            pieChartDTO.setVertical(tiles);
+            pieChartDTO.setData(list);
+        }
+        return pieChartDTO;
+    }
+
+    /**
+     * 计算百分比
+     *
+     * @param list
+     * @param tiles
+     * @param total
+     */
+    public void computeTitles(List<Map> list, List<String> tiles, double total) {
+        DecimalFormat df = new DecimalFormat("######0.00");
+        for (Map map : list) {
+            String name = (String) map.get("name");
+            int pv = (int) map.get("value");
+            double p = pv * 100 / total;
+            String title = name + "(" + df.format(p) + "%)";
+            map.put("name", title);
+            tiles.add(title);
+        }
+
     }
 
     /**
@@ -188,18 +267,19 @@ public class DataService implements IDataService {
         //筛选时间和模糊查询关键字
         BoolQueryBuilder builder = QueryBuilders.boolQuery();
         builder.must(QueryBuilders.rangeQuery("@timestamp").from(startTime).to(endTime));
-        builder.must(QueryBuilders.wildcardQuery("cpcode.raw", "*" + keyword + "*"));
+        builder.must(QueryBuilders.wildcardQuery("rpname.raw", "*" + keyword + "*"));
+        builder.must(QueryBuilders.wildcardQuery("rptype.raw", "*详?页"));
         esquery.setQuery(builder);
         esquery.setPageSize(0);
         //先对cpcode分组得出匹配的各页面
-        TermsAggregationBuilder aggs = AggregationBuilders.terms("pages").field("cpcode.raw");
+        TermsAggregationBuilder aggs = AggregationBuilders.terms("pages").field("rpcode.raw");
         SearchResponse resp = esClient.searchByAggs(index, type, esquery, aggs);
         StringTerms terms = EsUtils.getAggFromResult(resp, "pages");
         for (Bucket bucket : terms.getBuckets()) {
             String rpcode = bucket.getKeyAsString();
-            Map map=new HashMap();
-            map.put("value",rpcode);
-            map.put("label",rpcode);
+            Map map = new HashMap();
+            map.put("value", rpcode);
+            map.put("label", rpcode);
             list.add(map);
         }
         return list;

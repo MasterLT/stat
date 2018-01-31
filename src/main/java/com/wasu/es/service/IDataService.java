@@ -9,5 +9,7 @@ public interface IDataService {
 
     PieChartDTO getFromOrToDetail(String index, String keyword, String beginDate, String endDate,int queryType);
 
+    PieChartDTO getToDetail(String index, String keyword, String beginDate, String endDate);
+
     List getRealName(String index, String keyword, String beginDate, String endDate);
 }

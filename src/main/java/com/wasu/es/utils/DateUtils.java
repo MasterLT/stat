@@ -1,10 +1,12 @@
 package com.wasu.es.utils;
 
 import com.google.common.collect.Lists;
+import lombok.Data;
 import org.apache.commons.lang3.time.DateFormatUtils;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -190,6 +192,20 @@ public class DateUtils extends org.apache.commons.lang3.time.DateUtils {
             i++;
         }
         return st;
+    }
+
+    /**
+     * 改变指定日期指定天数
+     *
+     * @return
+     * @throws Exception
+     */
+    public static Date getSpecifiedDay(Date date, int change) {
+        Calendar c = Calendar.getInstance();
+        c.setTime(date);
+        int day = c.get(Calendar.DATE);
+        c.set(Calendar.DATE, day + change);
+        return c.getTime();
     }
 
     /**

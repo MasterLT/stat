@@ -4,8 +4,11 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.wasu.es.enums.AnalysisEnum;
+import com.wasu.es.mapper.StatDailyAnalysisMapper;
 import com.wasu.es.model.EsPosPvUv;
 import com.wasu.es.model.LogModel;
+import com.wasu.es.model.StatDailyAnalysis;
 import com.wasu.es.model.dto.DatatablesViewPage;
 import com.wasu.es.model.dto.PieChartDTO;
 import com.wasu.es.model.dto.ResourceDTO;
@@ -26,6 +29,8 @@ import org.elasticsearch.search.aggregations.bucket.terms.StringTerms;
 import org.elasticsearch.search.aggregations.bucket.terms.StringTerms.Bucket;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.cardinality.InternalCardinality;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Example;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerAdapter;
 
@@ -41,6 +46,9 @@ import java.util.Map;
 @Service("IDataService")
 public class DataService implements IDataService {
     EsClient esClient;
+    @Autowired
+    StatDailyAnalysisMapper statDailyAnalysisMapper;
+
 
     @PostConstruct
     public void init() {
@@ -283,6 +291,16 @@ public class DataService implements IDataService {
             list.add(map);
         }
         return list;
+    }
+
+    @Override
+    public Object getAnalysis(String region, String day) {
+        tk.mybatis.mapper.entity.Example example = new tk.mybatis.mapper.entity.Example(StatDailyAnalysis.class);
+        example.createCriteria().andEqualTo("region", region).andEqualTo("day", day).andEqualTo("type", AnalysisEnum.INDEX.getType());
+        List<StatDailyAnalysis> list = statDailyAnalysisMapper.selectByExample(example);
+        if (list.size() > 0)
+            return list.get(0).getValue();
+        else return null;
     }
 
     private List<EsPosPvUv> build(JSONArray obj, SearchResponse searchResponse) {

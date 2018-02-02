@@ -39,16 +39,16 @@
     </plugin>
 
     <jdbcConnection driverClass="com.mysql.jdbc.Driver"
-                    connectionURL="jdbc:mysql://125.210.141.30:3306/broadband"
+                    connectionURL="jdbc:mysql://125.210.126.98:3306/broadband"
                     userId="admin"
-                    password="Hello1234">
+                    password="rqXHR8we">
     </jdbcConnection>
 
-    <javaModelGenerator targetPackage="generator.rml.model" targetProject="E:\java_workspace\stat\src\test\java"/>
+    <javaModelGenerator targetPackage="com.wasu.es.model" targetProject="D:\git-project\springboot-stat\stat\src\test\java"/>
 
-    <sqlMapGenerator targetPackage="generator.rml.mappers"  targetProject="E:\java_workspace\stat\src\test\java"/>
+    <sqlMapGenerator targetPackage="com.wasu.es.mappers"  targetProject="D:\git-project\springboot-stat\stat\src\test\java"/>
 	
-    <javaClientGenerator targetPackage="generator.rml.mapper" targetProject="E:\java_workspace\stat\src\test\java" type="XMLMAPPER" />
+    <javaClientGenerator targetPackage="com.wasu.es.mapper" targetProject="D:\git-project\springboot-stat\stat\src\test\java" type="XMLMAPPER" />
  
     <table tableName="%">
 	  <!-- <property name="useActualColumnNames" value="true"/> --> <!-- 保持列名与数据库一致，适合数据库列名为骆驼命名法的情况(如：userId) -->

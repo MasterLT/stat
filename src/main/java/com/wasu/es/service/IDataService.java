@@ -12,4 +12,6 @@ public interface IDataService {
     PieChartDTO getToDetail(String index, String keyword, String beginDate, String endDate);
 
     List getRealName(String index, String keyword, String beginDate, String endDate);
+
+    Object getAnalysis(String region, String day);
 }
